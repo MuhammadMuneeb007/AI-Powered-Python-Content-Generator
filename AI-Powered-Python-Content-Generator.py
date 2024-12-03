@@ -393,9 +393,8 @@ with col2:
             binary_data = pdf_file.read()
         
         # Use the pdf_viewer to display the PDF
-        pdf_viewer(binary_data, width=700)       
-   
-
+        pdf_viewer(binary_data, width=1000,height=250)       
+    
         with open(tmp_pdf_file_path, "rb") as pdf_file:
             pdf_data = pdf_file.read()
 
