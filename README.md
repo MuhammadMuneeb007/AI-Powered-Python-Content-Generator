@@ -1,58 +1,58 @@
-# AI-Powered-Python-Content-Generator
-AI-Powered Python Content Generator
  
+# 🌟 AI-Powered Python Content Generator
+
 ![AI-Powered-Python-Content-Generator](AI-Powered-Python-Content-Generator.gif)  
-**Website**: [AI-Powered-Python-Content-Generator](https://ai-powered-python-content-generator.streamlit.app/)
- 
-
-This project integrates Hugging Face's HuggingChat with an online Python IDE to enhance the learning experience. Users can ask programming-related questions and run code directly from the interface.
-
-- 🤖 **HuggingChat Integration**: This project integrates **HuggingChat** with an online **Python IDE** to enhance the learning experience.
-- 🌐 **Create Account on Hugging Face**:  
-  - Sign up on [Hugging Face](https://huggingface.co/welcome).
-  - Use your username and password to access the application.
-- 💬 **Enter Queries**:  
-  - Ask questions like "Explain different ways in which I can use the print statement."
-  - **HuggingChat** will generate a response based on the query.
-- 🧑‍💻 **IDE Integration**:  
-  - The response from **HuggingChat** can be parsed into the **Python IDE** for execution.
-  - Users can also upload input data and files for processing by the IDE.
-- 📥 **Download Code & Response**:  
-  - After execution, the generated code and its response can be downloaded for reference.
----
-
-### Key Features:
-- 💻 **Streamlit Interface**: User-friendly web interface to interact with the model and run Python code.
-- 🤖 **HuggingChat Integration**: Uses **HuggingChat** for generating Python code based on user inputs.
-- 🔧 **Automatic Module Installation**: Installs required Python modules automatically.
-- 💡 **Code Generation**: Displays the generated Python code in an editor for execution.
-- 📁 **File Uploads & Input Handling**: Allows file uploads and input data processing.
-- 🚀 **Execution Environment**: Runs generated code in a local Python environment, displaying real-time results.
+**Website**: [AI-Powered Python Content Generator](https://ai-powered-python-content-generator.streamlit.app/)
 
 ---
 
-## Installation
+## 🚀 Overview
+The **AI-Powered Python Content Generator** is a tool designed to assist students and educators. You can input any query or Python concept, and HugChat will generate notes in PDF format, as well as Python code in a Jupyter Notebook.
 
-### 1. Create an Account on Hugging Face  
+### 📝 How to Use:
+1. **Enter Your Query**:  
+   Type your query (e.g., "Explain dictionaries in Python") in the left panel.
+2. **Authenticate**:  
+   Provide your HugChat credentials (Username and Password).
+3. **Submit Your Query**:  
+   Click **Submit** to receive a markdown response from HugChat.
+4. **Edit Markdown**:  
+   Modify the markdown response (if necessary) in the center panel.
+5. **Generate & Preview**:  
+   In the right panel, generate and preview your PDF or Jupyter Notebook. You can open the notebook in Google Colab and download them.
+
+---
+
+## ⚙️ Installation Instructions
+
+### 1. **Create an Account on Hugging Face**  
 - Sign up at [Hugging Face](https://huggingface.co/welcome).
 
-### 2. Install **Anaconda**
-- Download and install Anaconda from [here](https://www.anaconda.com/products/distribution).
-- After installation, create a new Conda environment using the provided `AdvancedProgramming.yml` file. Run the following command in your terminal:
+### 2. **Install Anaconda**  
+- Download and install **Anaconda** from [here](https://www.anaconda.com/products/distribution).
+- After installation, create a new Conda environment using the provided `AdvancedProgramming.yml` file:
   ```bash
-  conda env create -f environment.yml
+  conda env create -f LearnPythonWithAI.yml
   ```
-- Once the environment is created, activate it using:
+- Once the environment is created, activate it by running:
   ```bash
   conda activate LearnPythonWithAI
   ```
 
-### 3. Run the Application
+### 3. **Run the Application**  
 - After all dependencies are installed, run the application using:
   ```bash
-  streamlit run AI-Powered-Python-Learning-Assistant.py
+  streamlit run AI-Powered-Python-Content-Generator.py
   ```
  
-Feel free to reach out with any issues or for further assistance.
-```
+## 💡 Example Usage
+**Query**: *"Explain dictionaries in Python"*
+
+**Generated Notes**:  
+- **Definition**: A dictionary in Python is an unordered collection of data in the form of key-value pairs.
+- **Example Code**:
+  ```python
+  my_dict = {"name": "John", "age": 25}
+  print(my_dict["name"])  # Output: John
+  ```
  
