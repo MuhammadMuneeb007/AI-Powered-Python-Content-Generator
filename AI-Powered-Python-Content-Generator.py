@@ -391,7 +391,11 @@ with col2:
         print(tmp_pdf_file_path)
         with open(tmp_pdf_file_path, "rb") as pdf_file:
             binary_data = pdf_file.read()
-        
+        def pdf_to_base64(pdf_path):
+            with open(tmp_pdf_file_path, "rb") as pdf_file:
+                pdf_data = pdf_file.read()
+            return base64.b64encode(pdf_data).decode("utf-8")
+
         # Use the pdf_viewer to display the PDF
         # Convert PDF to base64
         pdf_base64 = pdf_to_base64(tmp_pdf_file_path)
