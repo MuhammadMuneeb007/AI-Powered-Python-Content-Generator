@@ -378,37 +378,43 @@ with col2:
         {html_content}
         """
 
+
         # Generate PDF from HTML using pdfkit with local file access enabled
         options = {'no-images': '', 'enable-local-file-access': ''}
         pdf = pdfkit.from_string(html_content, False, options=options)
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_pdf_file:
-                tmp_pdf_file.write(pdf)
-                tmp_pdf_file_path = tmp_pdf_file.name  # Get the path of the temporary file
         
-        # Save the PDF to a BytesIO object
-        pdf_file = BytesIO(pdf)
-        pdf_file.seek(0)  # Reset pointer to the beginning of the file
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_pdf_file:
+            tmp_pdf_file.write(pdf)
+            tmp_pdf_file_path = tmp_pdf_file.name  # Get the path of the temporary file
 
-        # Embed the PDF preview in an iframe with "fit to page" scaling
-        pdf_base64 = base64.b64encode(pdf_file.read()).decode('utf-8')
-        pdf_url = f"data:application/pdf;base64,{pdf_base64}#view=FitH"
-        st.markdown(
-            f'''
-            <iframe 
-                src="file://{tmp_pdf_file_path}" 
-                width="100%" 
-                height="1000px" 
-                style="border: none;"
-            >
-            </iframe>
-            ''',
-            unsafe_allow_html=True
-        )
+
+        print(tmp_pdf_file_path)
+       
+        def pdf_to_base64(pdf_path):
+            with open(tmp_pdf_file_path, "rb") as pdf_file:
+                pdf_data = pdf_file.read()
+            return base64.b64encode(pdf_data).decode("utf-8")
+
+        # Convert PDF to base64
+        pdf_base64 = pdf_to_base64(tmp_pdf_file_path)
+
+        # Embed the PDF in an HTML <embed> tag using the base64 encoding
+        pdf_html = f'''
+            <embed src="data:application/pdf;base64,{pdf_base64}#view=FitH" width="100%" height="1000px" />
+        '''
+
+        # Display the PDF in the Streamlit app
+        st.markdown(pdf_html, unsafe_allow_html=True)
+
+
+
+        with open(tmp_pdf_file_path, "rb") as pdf_file:
+            pdf_data = pdf_file.read()
 
         # Add a download button for the PDF
         st.download_button(
             label="Download PDF 📥",
-            data=pdf_file,
+            data= pdf_data, 
             file_name="hugchat_response.pdf",
             mime="application/pdf"
         )
