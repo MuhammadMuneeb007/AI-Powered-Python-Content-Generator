@@ -374,7 +374,6 @@ with col2:
                 margin-left: 20px;
                 margin-right: 20px;
             }}
-            @import url('https://fonts.googleapis.com/css2?family={font_family.replace(" ", "+")}:wght@400;700&display=swap');
         </style>
         {html_content}
         """
