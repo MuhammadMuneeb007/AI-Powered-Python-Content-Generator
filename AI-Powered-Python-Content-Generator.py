@@ -402,7 +402,7 @@ with col2:
 
         # Embed the PDF in an HTML <embed> tag using the base64 encoding
         pdf_html = f'''
-            <embed src="data:application/pdf;base64,{pdf_base64}#view=FitH" width="100%" height="100%" />
+            <embed src="data:application/pdf;base64,{pdf_base64}#view=FitH" width="100%" height="800" />
         '''
 
         # Display the PDF in the Streamlit app
