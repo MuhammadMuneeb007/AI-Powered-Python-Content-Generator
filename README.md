@@ -1,8 +1,8 @@
 # AI-Powered-Python-Content-Generator
 AI-Powered Python Content Generator
  
-![AI-Powered-Python-Learning-Assistant](AI-Powered-Python-Learning-Assistant.gif)  
-**Website**: [AI-Powered Python Learning Assistant](https://ai-powered-python-learning-assistant.streamlit.app/)
+![AI-Powered-Python-Content-Generator](AI-Powered-Python-Content-Generator.gif)  
+**Website**: [AI-Powered-Python-Content-Generator](https://ai-powered-python-content-generator.streamlit.app/)
  
 
 This project integrates Hugging Face's HuggingChat with an online Python IDE to enhance the learning experience. Users can ask programming-related questions and run code directly from the interface.
