@@ -29,3 +29,9 @@ markdownify==0.11.6
 nbformat==5.10.4
 fitz==0.0.1.dev2
 PyMuPDF==1.24.1
+wkhtmltopdf==0.2
+
+
+
+
+
