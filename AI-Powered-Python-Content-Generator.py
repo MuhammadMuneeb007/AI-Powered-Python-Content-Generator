@@ -29,7 +29,14 @@ import re
 import nbformat
 import tempfile
 import streamlit as st
-
+import base64
+import io
+import markdown_it
+import pdfkit
+import fitz  # PyMuPDF for PDF to text extraction
+from docx import Document
+import streamlit as st
+from io import BytesIO
 def convert_markdown_to_notebook(markdown_text):
     """
     Converts markdown text to a Jupyter notebook structure.
@@ -406,14 +413,7 @@ with col2:
             file_name="hugchat_response.pdf",
             mime="application/pdf"
         )
-        import base64
-        import io
-        import markdown_it
-        import pdfkit
-        import fitz  # PyMuPDF for PDF to text extraction
-        from docx import Document
-        import streamlit as st
-        from io import BytesIO
+
 
         def pdf_to_text(pdf_file):
             # Read the PDF using PyMuPDF
