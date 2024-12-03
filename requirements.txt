@@ -26,5 +26,5 @@ reportlib==3.4.0
 Markdown==3.6
 markdown-it-py==3.0.0
 markdownify==0.11.6
-
+nbformat==5.10.4
 
