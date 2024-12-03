@@ -5,7 +5,7 @@
 **Website**: [AI-Powered Python Content Generator](https://ai-powered-python-content-generator.streamlit.app/)
 
 
-**Use Firefox** [![Firefox Icon](https://firefox-dev.tools/photon/images/product-identity-assets/firefox.png)](https://www.mozilla.org/en-US/firefox/new/) because Chrome does not display PDFs properly in Streamlit apps. For more information, see this discussion: [link](https://discuss.streamlit.io/t/problems-displaying-pdf-in-streamlit-cloud/35555).
+**Use Firefox** (https://www.mozilla.org/en-US/firefox/new/) because Chrome does not display PDFs properly in Streamlit apps. For more information, see this discussion: [link](https://discuss.streamlit.io/t/problems-displaying-pdf-in-streamlit-cloud/35555).
 
 ---
 
