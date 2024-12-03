@@ -395,7 +395,7 @@ with col2:
         st.markdown(
             f'''
             <iframe 
-                src="{pdf_url}" 
+                src="file://{tmp_pdf_file_path}" 
                 width="100%" 
                 height="1000px" 
                 style="border: none;"
