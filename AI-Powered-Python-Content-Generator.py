@@ -393,7 +393,17 @@ with col2:
             binary_data = pdf_file.read()
         
         # Use the pdf_viewer to display the PDF
-        pdf_viewer(binary_data, width=2000,height=2000)       
+        # Convert PDF to base64
+        pdf_base64 = pdf_to_base64(tmp_pdf_file_path)
+
+        # Embed the PDF in an HTML <embed> tag using the base64 encoding
+        pdf_html = f'''
+            <embed src="data:application/pdf;base64,{pdf_base64}#view=FitH" width="100%" height="1000px" />
+        '''
+
+        # Display the PDF in the Streamlit app
+        st.markdown(pdf_html, unsafe_allow_html=True)
+      
     
         with open(tmp_pdf_file_path, "rb") as pdf_file:
             pdf_data = pdf_file.read()
