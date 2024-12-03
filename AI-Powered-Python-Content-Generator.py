@@ -6,7 +6,7 @@ from io import BytesIO
 from hugchat import hugchat
 from hugchat.login import Login
 import streamlit as st
- 
+from streamlit_pdf_viewer import pdf_viewer
 # Setup Streamlit page configuration
 st.set_page_config(page_title="AI-Powered Python Content Generator", layout="wide")
 
@@ -389,24 +389,12 @@ with col2:
 
 
         print(tmp_pdf_file_path)
-       
-        def pdf_to_base64(pdf_path):
-            with open(tmp_pdf_file_path, "rb") as pdf_file:
-                pdf_data = pdf_file.read()
-            return base64.b64encode(pdf_data).decode("utf-8")
-
-        # Convert PDF to base64
-        pdf_base64 = pdf_to_base64(tmp_pdf_file_path)
-
-        # Embed the PDF in an HTML <embed> tag using the base64 encoding
-        pdf_html = f'''
-            <embed src="data:application/pdf;base64,{pdf_base64}#view=FitH" width="100%" height="1000px" />
-        '''
-
-        # Display the PDF in the Streamlit app
-        st.markdown(pdf_html, unsafe_allow_html=True)
-
-
+        with open(tmp_pdf_file_path, "rb") as pdf_file:
+            binary_data = pdf_file.read()
+        
+        # Use the pdf_viewer to display the PDF
+        pdf_viewer(binary_data, width=700)       
+   
 
         with open(tmp_pdf_file_path, "rb") as pdf_file:
             pdf_data = pdf_file.read()
