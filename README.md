@@ -33,7 +33,7 @@ The **AI-Powered Python Content Generator** is a tool designed to assist student
 
 ### 2. **Install Anaconda**  
 - Download and install **Anaconda** from [here](https://www.anaconda.com/products/distribution).
-- After installation, create a new Conda environment using the provided `AdvancedProgramming.yml` file:
+- After installation, create a new Conda environment using the provided `LearnPythonWithAI.yml` file:
   ```bash
   conda env create -f LearnPythonWithAI.yml
   ```
