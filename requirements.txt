@@ -28,10 +28,11 @@ markdown-it-py==3.0.0
 markdownify==0.11.6
 nbformat==5.10.4
 fitz==0.0.1.dev2
-PyMuPDF==1.24.1
+PyMuPDF==1.25.5
 wkhtmltopdf==0.2
 streamlit-pdf-viewer==0.0.19
-
+tools==0.1.9
+frontend==0.0.3
 
 
 
