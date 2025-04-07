@@ -7,36 +7,150 @@ from hugchat import hugchat
 from hugchat.login import Login
 import streamlit as st
 from streamlit_pdf_viewer import pdf_viewer
-# Setup Streamlit page configuration
-st.set_page_config(page_title="AI-Powered Python Content Generator", layout="wide")
-
-# Right pane: PPTX and PDF Preview and Customization
-# Right pane: PPTX and PDF Preview and Customization
-import streamlit as st
 import nbformat
-from io import BytesIO
-import tempfile
-import streamlit as st
-import nbformat
-from io import BytesIO
 import tempfile
 import re
-import re
-import nbformat
-import tempfile
-import streamlit as st
-import re
-import nbformat
-import tempfile
-import streamlit as st
-import base64
-import io
-import markdown_it
-import pdfkit
 import fitz  # PyMuPDF for PDF to text extraction
 from docx import Document
-import streamlit as st
-from io import BytesIO
+import os
+import hashlib
+import datetime
+import shutil
+
+# Create a user directory manager
+class UserDirectoryManager:
+    def __init__(self, base_dir="./user_data/"):
+        self.base_dir = base_dir
+        if not os.path.exists(self.base_dir):
+            os.makedirs(self.base_dir)
+    
+    def get_user_directory(self, username):
+        # Create a unique directory name based on username hash
+        username_hash = hashlib.md5(username.encode()).hexdigest()[:10]
+        user_dir = os.path.join(self.base_dir, username_hash)
+        
+        if not os.path.exists(user_dir):
+            os.makedirs(user_dir)
+            # Create subdirectories for different content types
+            for subdir in ['pdf', 'ipynb', 'markdown', 'docx', 'cookies']:
+                os.makedirs(os.path.join(user_dir, subdir), exist_ok=True)
+        
+        return user_dir
+    
+    def get_cookies_directory(self, username):
+        user_dir = self.get_user_directory(username)
+        cookies_dir = os.path.join(user_dir, "cookies")
+        if not os.path.exists(cookies_dir):
+            os.makedirs(cookies_dir)
+        return cookies_dir
+    
+    def save_content(self, username, content_type, content, filename=None, query=None):
+        user_dir = self.get_user_directory(username)
+        
+        # Get the appropriate subdirectory
+        if content_type in ['pdf', 'ipynb', 'markdown', 'docx']:
+            subdir = os.path.join(user_dir, content_type)
+        else:
+            subdir = user_dir
+        
+        # Create filename with timestamp if not provided
+        if not filename:
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            query_part = ""
+            if query:
+                # Sanitize query for filename
+                query_part = "_" + "".join(c if c.isalnum() else "_" for c in query)[:30]
+            
+            # Set file extension
+            if content_type == 'pdf':
+                file_ext = ".pdf"
+            elif content_type == 'ipynb':
+                file_ext = ".ipynb"
+            elif content_type == 'markdown':
+                file_ext = ".md"
+            elif content_type == 'docx':
+                file_ext = ".docx"
+            else:
+                file_ext = ".txt"
+            
+            filename = f"{content_type}_{timestamp}{query_part}{file_ext}"
+        else:
+            # Ensure proper extension on provided filename
+            ext = f".{content_type}" if content_type != 'markdown' else '.md'
+            if not filename.endswith(ext):
+                filename = f"{filename}{ext}"
+        
+        file_path = os.path.join(subdir, filename)
+        
+        # Save the content based on type
+        if content_type in ['pdf', 'docx'] or isinstance(content, bytes):
+            # Binary content
+            with open(file_path, 'wb') as f:
+                if isinstance(content, str):
+                    f.write(content.encode('utf-8'))
+                else:
+                    f.write(content)
+        else:
+            # Text content
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+        
+        return file_path
+    
+    def get_file_history(self, username):
+        user_dir = self.get_user_directory(username)
+        history = {
+            'pdf': [],
+            'ipynb': [],
+            'markdown': [],
+            'docx': [],
+            'other': []
+        }
+        
+        # Collect files from each subdirectory
+        for content_type in ['pdf', 'ipynb', 'markdown', 'docx']:
+            subdir = os.path.join(user_dir, content_type)
+            if os.path.exists(subdir):
+                history[content_type] = [
+                    os.path.join(subdir, f) 
+                    for f in os.listdir(subdir)
+                    if os.path.isfile(os.path.join(subdir, f))
+                ]
+        
+        # Check main directory for other files
+        for f in os.listdir(user_dir):
+            file_path = os.path.join(user_dir, f)
+            if os.path.isfile(file_path) and not any(file_path in files for files in history.values()):
+                history['other'].append(file_path)
+        
+        # Sort files by modification time (newest first)
+        for category in history:
+            history[category].sort(key=lambda x: os.path.getmtime(x), reverse=True)
+        
+        return history
+    
+    def clean_old_files(self, username, days_old=30):
+        user_dir = self.get_user_directory(username)
+        cutoff_time = datetime.datetime.now() - datetime.timedelta(days=days_old)
+        cutoff_timestamp = cutoff_time.timestamp()
+        
+        # Walk through all subdirectories
+        for root, dirs, files in os.walk(user_dir):
+            for file in files:
+                file_path = os.path.join(root, file)
+                # Skip files in cookies directory
+                if "cookies" in file_path:
+                    continue
+                
+                # Check file modification time
+                mod_time = os.path.getmtime(file_path)
+                if mod_time < cutoff_timestamp:
+                    os.remove(file_path)
+
+# Create a singleton instance
+user_manager = UserDirectoryManager()
+
+# Function to convert markdown to notebook
 def convert_markdown_to_notebook(markdown_text):
     """
     Converts markdown text to a Jupyter notebook structure.
@@ -69,6 +183,10 @@ def convert_markdown_to_notebook(markdown_text):
                 notebook.cells.append(nbformat.v4.new_code_cell(source=section))
 
     return notebook
+
+# Setup Streamlit page configuration
+st.set_page_config(page_title="AI-Powered Python Content Generator", layout="wide")
+
 # Styling for the page
 st.markdown("""
     <style>
@@ -241,272 +359,360 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
+# Create tabs for Content Generator and User History
+tab1, tab2 = st.tabs(["Content Generator", "Your History"])
 
-
-
-st.markdown("""
-    <style>
-        .container {
-            max-width: 600px;
-            max-height: 50px;
-            margin: 10px auto; /* Corrected the margin */
-            padding: 5px;
-            text-align: center; /* Centers the content inside */
-        }
-        .header-text {
-            font-size: 20px;  /* Reduced font size */
-            font-weight: bold;
-            margin-bottom: 8px;  /* Reduced bottom margin */
-        }
-        .stTextInput, .stTextArea {
-            width: 100%;  /* Full width of the container */
-            margin-bottom: 8px;  /* Reduced bottom margin */
-        }
-        .stTextArea {
-            height: 100px;  /* Reduced height of the text area */
-        }
-        .stButton {
-            margin-top: 10px;
-        }
-    </style>
-    <div class="container">
-        <h3 class="header-text">User Input</h3>
-    </div>
-""", unsafe_allow_html=True)
- 
-import streamlit as st
-
-  
-# Create columns for user input, username, password, and submit button
-col1, col2, col3, col4 = st.columns([2, 1, 1, 1])  # Adjust columns size ratio
-
-# User enters the command/query in the first column
-with col1:
-    user_input = st.text_area("Enter your query", height=68, key="user_input", label_visibility="collapsed", placeholder="e.g., 'Explain dictionaries in Python'")
-
-# Username input in the second column
-with col2:
-    username = st.text_input("Username", max_chars=50, key="username", placeholder="Username")
-
-# Password input in the third column
-with col3:
-    password = st.text_input("Password", type="password", max_chars=50, key="password", placeholder="Password")
-
-# Submit button in the fourth column
-with col4:
-    submit_button = st.button("Submit", key="submit_button")
- 
-# Handling the form submission and HugChat API login
-if submit_button:
-    if user_input:  # Ensure query input is provided
-        query = user_input
-        if username and password:  # Check for both username and password
-            st.session_state.authenticated = True
-            cookie_path_dir = "./cookies/"  # Path to store cookies
-            sign = Login(username, password)  # Assuming Login is a custom function for authentication
-            cookies = sign.login(cookie_dir_path=cookie_path_dir, save_cookies=True)  # Simulate login
-            chatbot = hugchat.ChatBot(cookies=cookies.get_dict())  # Initialize chatbot with cookies
-            id = chatbot.new_conversation()
-            chatbot.change_conversation(id)  # Change to the new conversation
-            message_result = chatbot.chat(query)  # Send the query to HugChat API
-
-            response = message_result
-            st.session_state.hugchat_response = str(response)  # Store the response in session state
-        else:
-            st.error("Please provide both username and password to authenticate.")
-
-
-# Create a three-column layout with flexbox for better control
-col1, col2, col3  = st.columns([3,3,3 ])
-
- 
-from streamlit_ace import st_ace
-# Middle pane: HugChat Response (Editable)
-with col1:
-    st.markdown('<div class="container"><h3 class="header-text">Markdown Response</h3>', unsafe_allow_html=True)
-    
-    if 'hugchat_response' in st.session_state:
-        hugchat_response = st.session_state.hugchat_response
-          
-        #edited_markdown = st.text_area("Edit your markdown response", hugchat_response, height=1000)
-        edited_markdown = st_ace(
-                    value=hugchat_response,  # Initial content for the editor
-                    language="markdown",     # Set to markdown mode
-                    height=1000,             # Set the editor height
-                    theme="monokai",         # Set theme
-                    wrap=True,               # Enable wrapping of lines
-                    show_gutter=True,
-                 
-                    auto_update=True,
-                     
-                )
-         
-        st.session_state['edited_response'] = edited_markdown  # Update the edited response
-
-        # Save the edited response to session state
-        #st.session_state.edited_response = edited_markdown
-        
-    else:
-        st.info("Enter a query and authenticate to see the response.")
-    #st.session_state.edited_response = edited_markdown
-    st.markdown("</div>", unsafe_allow_html=True)  # Close container div
- 
-with col2:
-    st.markdown('<div class="container"><h3 class="header-text">PDF Preview 📄</h3>', unsafe_allow_html=True)
-     
-    # PDF preview section
-    if 'edited_response' in st.session_state:
-        # Convert the edited Markdown to HTML
-        md_parser = markdown_it.MarkdownIt()
-        html_content = md_parser.render(st.session_state.edited_response)
-
-        # Customize HTML content for PDF generation
-        font_family = st.selectbox("Font Family", ["Arial", "Helvetica", "Times New Roman", "Courier", "Georgia", "Verdana", "Comic Sans MS"])
-        html_content = f"""
+with tab1:
+    st.markdown("""
         <style>
-            body {{
-                font-size: 12px;
-                font-family: '{font_family}'; 
-                color: #000000;
-                background-color: #f9f9f9;
-                margin-top: 20px;
-                margin-bottom: 20px;
-                margin-left: 20px;
-                margin-right: 20px;
-            }}
+            .container {
+                max-width: 600px;
+                max-height: 50px;
+                margin: 10px auto;
+                padding: 5px;
+                text-align: center;
+            }
+            .header-text {
+                font-size: 20px;
+                font-weight: bold;
+                margin-bottom: 8px;
+            }
+            .stTextInput, .stTextArea {
+                width: 100%;
+                margin-bottom: 8px;
+            }
+            .stTextArea {
+                height: 100px;
+            }
+            .stButton {
+                margin-top: 10px;
+            }
         </style>
-        {html_content}
-        """
+        <div class="container">
+            <h3 class="header-text">User Input</h3>
+        </div>
+    """, unsafe_allow_html=True)
+     
+    # Create columns for user input, username, password, and submit button
+    col1, col2, col3, col4 = st.columns([2, 1, 1, 1])  # Adjust columns size ratio
 
+    # User enters the command/query in the first column
+    with col1:
+        user_input = st.text_area("Enter your query", height=68, key="user_input", label_visibility="collapsed", placeholder="e.g., 'Explain dictionaries in Python'")
 
-        # Generate PDF from HTML using pdfkit with local file access enabled
-        options = {'no-images': '', 'enable-local-file-access': ''}
-        pdf = pdfkit.from_string(html_content, False, options=options)
+    # Username input in the second column
+    with col2:
+        username = st.text_input("Username", max_chars=50, key="username", placeholder="Username")
+
+    # Password input in the third column
+    with col3:
+        password = st.text_input("Password", type="password", max_chars=50, key="password", placeholder="Password")
+
+    # Submit button in the fourth column
+    with col4:
+        submit_button = st.button("Submit", key="submit_button")
+     
+    # Handling the form submission and HugChat API login
+    if submit_button:
+        if user_input:  # Ensure query input is provided
+            query = user_input
+            if username and password:  # Check for both username and password
+                st.session_state.authenticated = True
+                st.session_state.current_username = username  # Store username in session
+                
+                # Create user directory and get cookies path
+                cookie_path_dir = user_manager.get_cookies_directory(username)
+                
+                # Login to HugChat
+                sign = Login(username, password)
+                cookies = sign.login(cookie_dir_path=cookie_path_dir, save_cookies=True)
+                chatbot = hugchat.ChatBot(cookies=cookies.get_dict())
+                id = chatbot.new_conversation()
+                chatbot.change_conversation(id)
+                message_result = chatbot.chat(query)
+
+                response = message_result
+                st.session_state.hugchat_response = str(response)
+                
+                # Save the markdown response
+                user_manager.save_content(username, 'markdown', str(response), query=query)
+            else:
+                st.error("Please provide both username and password to authenticate.")
+
+    # Create a three-column layout
+    col1, col2, col3 = st.columns([3, 3, 3])
+     
+    from streamlit_ace import st_ace
+    # Middle pane: HugChat Response (Editable)
+    with col1:
+        st.markdown('<div class="container"><h3 class="header-text">Markdown Response</h3>', unsafe_allow_html=True)
         
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_pdf_file:
-            tmp_pdf_file.write(pdf)
-            tmp_pdf_file_path = tmp_pdf_file.name  # Get the path of the temporary file
+        if 'hugchat_response' in st.session_state:
+            hugchat_response = st.session_state.hugchat_response
+              
+            edited_markdown = st_ace(
+                        value=hugchat_response,
+                        language="markdown",
+                        height=1000,
+                        theme="monokai",
+                        wrap=True,
+                        show_gutter=True,
+                        auto_update=True,
+                    )
+             
+            st.session_state['edited_response'] = edited_markdown
+        else:
+            st.info("Enter a query and authenticate to see the response.")
+        st.markdown("</div>", unsafe_allow_html=True)
+     
+    with col2:
+        st.markdown('<div class="container"><h3 class="header-text">PDF Preview 📄</h3>', unsafe_allow_html=True)
+         
+        # PDF preview section
+        if 'edited_response' in st.session_state and 'current_username' in st.session_state:
+            # Convert the edited Markdown to HTML
+            md_parser = markdown_it.MarkdownIt()
+            html_content = md_parser.render(st.session_state.edited_response)
 
+            # Customize HTML content for PDF generation
+            font_family = st.selectbox("Font Family", ["Arial", "Helvetica", "Times New Roman", "Courier", "Georgia", "Verdana", "Comic Sans MS"])
+            html_content = f"""
+            <style>
+                body {{
+                    font-size: 12px;
+                    font-family: '{font_family}'; 
+                    color: #000000;
+                    background-color: #f9f9f9;
+                    margin-top: 20px;
+                    margin-bottom: 20px;
+                    margin-left: 20px;
+                    margin-right: 20px;
+                }}
+            </style>
+            {html_content}
+            """
 
-        print(tmp_pdf_file_path)
-        with open(tmp_pdf_file_path, "rb") as pdf_file:
-            binary_data = pdf_file.read()
-        def pdf_to_base64(pdf_path):
+            # Generate PDF from HTML using pdfkit with local file access enabled
+            options = {'no-images': '', 'enable-local-file-access': ''}
+            pdf = pdfkit.from_string(html_content, False, options=options)
+            
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_pdf_file:
+                tmp_pdf_file.write(pdf)
+                tmp_pdf_file_path = tmp_pdf_file.name
+
+            def pdf_to_base64(pdf_path):
+                with open(pdf_path, "rb") as pdf_file:
+                    pdf_data = pdf_file.read()
+                return base64.b64encode(pdf_data).decode("utf-8")
+
+            # Convert PDF to base64
+            pdf_base64 = pdf_to_base64(tmp_pdf_file_path)
+
+            # Embed the PDF in an HTML tag
+            pdf_html = f'''
+                <embed src="data:application/pdf;base64,{pdf_base64}#view=FitH" width="100%" height="800" />
+            '''
+
+            # Display the PDF
+            st.markdown(pdf_html, unsafe_allow_html=True)
+            
+            # Save PDF to user directory
             with open(tmp_pdf_file_path, "rb") as pdf_file:
                 pdf_data = pdf_file.read()
-            return base64.b64encode(pdf_data).decode("utf-8")
-
-        # Use the pdf_viewer to display the PDF
-        # Convert PDF to base64
-        pdf_base64 = pdf_to_base64(tmp_pdf_file_path)
-
-        # Embed the PDF in an HTML <embed> tag using the base64 encoding
-        pdf_html = f'''
-            <embed src="data:application/pdf;base64,{pdf_base64}#view=FitH" width="100%" height="800" />
-        '''
-
-        # Display the PDF in the Streamlit app
-        st.markdown(pdf_html, unsafe_allow_html=True)
-      
-    
-        with open(tmp_pdf_file_path, "rb") as pdf_file:
-            pdf_data = pdf_file.read()
-
-        # Add a download button for the PDF
-        st.download_button(
-            label="Download PDF 📥",
-            data= pdf_data, 
-            file_name="hugchat_response.pdf",
-            mime="application/pdf"
-        )
-
-
-        def pdf_to_text(pdf_file):
-            # Read the PDF using PyMuPDF
-            doc = fitz.open(pdf_file)
-            text = ""
-            
-            # Extract text from each page of the PDF
-            for page_num in range(doc.page_count):
-                page = doc.load_page(page_num)
-                text += page.get_text()
-            
-            return text
-
-        # Convert extracted text from PDF to Word (.docx) format
-        def text_to_word(text):
-            document = Document()
-            # Add the extracted text as paragraphs
-            paragraphs = text.split("\n")
-            for paragraph in paragraphs:
-                if paragraph.strip():  # Avoid adding empty paragraphs
-                    document.add_paragraph(paragraph.strip())
-            return document
-
-        # Extract text from the generated PDF
-        pdf_file = open(tmp_pdf_file_path, 'rb')
-        extracted_text = pdf_to_text(pdf_file)
-
-        # Generate Word document from the extracted text
-        word_doc = text_to_word(extracted_text)
-
-        # Save the Word document to a BytesIO object
-        word_file = BytesIO()
-        word_doc.save(word_file)
-        word_file.seek(0)  # Reset pointer to the beginning of the file
-
-        # Add a download button for the Word file
-        st.download_button(
-            label="Download as Word 📥",
-            data=word_file,
-            file_name="hugchat_response.docx",
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        )
-        st.markdown("</div>", unsafe_allow_html=True)  # Close container div
-
-    else:
-        st.info("Authenticate and submit a query to generate PDF.")
-    
- 
-
-with col3:
-    st.markdown('<div class="container"><h3 class="header-text">Preview and Display as Jupyter Notebook 📒</h3>', unsafe_allow_html=True)
- 
-
-    if 'edited_response' in st.session_state:
-        # Convert the markdown to a Jupyter notebook
-        markdown_text = st.session_state.edited_response  # Assuming this contains your markdown content
-        nb = convert_markdown_to_notebook(markdown_text)
-
-        # Save the notebook to a temporary file
-        with tempfile.NamedTemporaryFile(suffix='.ipynb', mode='w', delete=False) as temp_file:
-            nbformat.write(nb, temp_file)
-            notebook_path = temp_file.name
-
-        # Display the notebook content as markdown and code cells in Streamlit
-        for cell in nb['cells']:
-            if cell['cell_type'] == 'markdown':
-                st.markdown(cell['source'], unsafe_allow_html=True)  # Render markdown content
-            elif cell['cell_type'] == 'code':
-                st.code(cell['source'], language='python')  # Render code block
-
-        # Provide a download link for the notebook
-        st.markdown(f"### Download the Notebook")
-        with open(notebook_path, "r") as file:
-            st.download_button(
-                label="Download Notebook (.ipynb)",
-                data=file,
-                file_name="notebook.ipynb",
-                mime="application/x-ipynb+json"
+                
+            # Save the PDF to user directory
+            pdf_path = user_manager.save_content(
+                st.session_state.current_username, 
+                'pdf', 
+                pdf_data, 
+                query=user_input
             )
 
-      
+            # Add a download button for the PDF
+            st.download_button(
+                label="Download PDF 📥",
+                data=pdf_data, 
+                file_name="hugchat_response.pdf",
+                mime="application/pdf"
+            )
 
+            # Convert PDF to Word
+            def pdf_to_text(pdf_file):
+                doc = fitz.open(pdf_file)
+                text = ""
+                for page_num in range(doc.page_count):
+                    page = doc.load_page(page_num)
+                    text += page.get_text()
+                return text
+
+            def text_to_word(text):
+                document = Document()
+                paragraphs = text.split("\n")
+                for paragraph in paragraphs:
+                    if paragraph.strip():
+                        document.add_paragraph(paragraph.strip())
+                return document
+
+            # Extract text and create Word document
+            pdf_file = open(tmp_pdf_file_path, 'rb')
+            extracted_text = pdf_to_text(pdf_file)
+            word_doc = text_to_word(extracted_text)
+
+            # Save Word document to BytesIO
+            word_file = BytesIO()
+            word_doc.save(word_file)
+            word_file.seek(0)
+            
+            # Save Word document to user directory
+            word_file.seek(0)
+            word_data = word_file.read()
+            docx_path = user_manager.save_content(
+                st.session_state.current_username, 
+                'docx', 
+                word_data, 
+                query=user_input
+            )
+            
+            # Reset for download button
+            word_file.seek(0)
+
+            # Add a download button for the Word file
+            st.download_button(
+                label="Download as Word 📥",
+                data=word_file,
+                file_name="hugchat_response.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            )
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        else:
+            st.info("Authenticate and submit a query to generate PDF.")
+        
+    with col3:
+        st.markdown('<div class="container"><h3 class="header-text">Preview and Display as Jupyter Notebook 📒</h3>', unsafe_allow_html=True)
+     
+        if 'edited_response' in st.session_state and 'current_username' in st.session_state:
+            # Convert the markdown to a Jupyter notebook
+            markdown_text = st.session_state.edited_response
+            nb = convert_markdown_to_notebook(markdown_text)
+
+            # Save the notebook to a temporary file
+            with tempfile.NamedTemporaryFile(suffix='.ipynb', mode='w', delete=False) as temp_file:
+                nbformat.write(nb, temp_file)
+                notebook_path = temp_file.name
+
+            # Display the notebook content as markdown and code cells
+            for cell in nb['cells']:
+                if cell['cell_type'] == 'markdown':
+                    st.markdown(cell['source'], unsafe_allow_html=True)
+                elif cell['cell_type'] == 'code':
+                    st.code(cell['source'], language='python')
+
+            # Save notebook to user directory
+            with open(notebook_path, "r") as file:
+                notebook_content = file.read()
+                
+            ipynb_path = user_manager.save_content(
+                st.session_state.current_username, 
+                'ipynb', 
+                notebook_content, 
+                query=user_input
+            )
+
+            # Download link for the notebook
+            st.markdown(f"### Download the Notebook")
+            with open(notebook_path, "r") as file:
+                st.download_button(
+                    label="Download Notebook (.ipynb)",
+                    data=file,
+                    file_name="notebook.ipynb",
+                    mime="application/x-ipynb+json"
+                )
+        else:
+            st.info("Authenticate and submit a query to generate previews.")
+
+# User History Tab
+with tab2:
+    if 'current_username' in st.session_state:
+        username = st.session_state.current_username
+        history = user_manager.get_file_history(username)
+        
+        st.markdown("## Your Content History")
+        
+        # Display PDFs
+        if history['pdf']:
+            with st.expander("PDF Files", expanded=True):
+                for pdf_file in history['pdf'][:5]:  # Show top 5
+                    file_name = os.path.basename(pdf_file)
+                    col1, col2 = st.columns([3, 1])
+                    with col1:
+                        st.write(file_name)
+                    with col2:
+                        with open(pdf_file, "rb") as f:
+                            st.download_button(
+                                label="Download",
+                                data=f,
+                                file_name=file_name,
+                                mime="application/pdf"
+                            )
+        
+        # Display Notebooks
+        if history['ipynb']:
+            with st.expander("Jupyter Notebooks", expanded=True):
+                for nb_file in history['ipynb'][:5]:  # Show top 5
+                    file_name = os.path.basename(nb_file)
+                    col1, col2 = st.columns([3, 1])
+                    with col1:
+                        st.write(file_name)
+                    with col2:
+                        with open(nb_file, "r") as f:
+                            st.download_button(
+                                label="Download",
+                                data=f,
+                                file_name=file_name,
+                                mime="application/x-ipynb+json"
+                            )
+        
+        # Display Markdown files
+        if history['markdown']:
+            with st.expander("Markdown Files", expanded=True):
+                for md_file in history['markdown'][:5]:  # Show top 5
+                    file_name = os.path.basename(md_file)
+                    col1, col2 = st.columns([3, 1])
+                    with col1:
+                        st.write(file_name)
+                    with col2:
+                        with open(md_file, "r") as f:
+                            st.download_button(
+                                label="Download",
+                                data=f,
+                                file_name=file_name,
+                                mime="text/markdown"
+                            )
+        
+        # Display Word documents
+        if history['docx']:
+            with st.expander("Word Documents", expanded=True):
+                for docx_file in history['docx'][:5]:  # Show top 5
+                    file_name = os.path.basename(docx_file)
+                    col1, col2 = st.columns([3, 1])
+                    with col1:
+                        st.write(file_name)
+                    with col2:
+                        with open(docx_file, "rb") as f:
+                            st.download_button(
+                                label="Download",
+                                data=f,
+                                file_name=file_name,
+                                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                            )
+                            
+        # File management options
+        st.markdown("## Manage Your Files")
+        with st.expander("File Management"):
+            days = st.slider("Clean files older than (days):", 1, 90, 30)
+            if st.button("Clean old files"):
+                user_manager.clean_old_files(username, days_old=days)
+                st.success(f"Files older than {days} days have been removed.")
     else:
-        st.info("Authenticate and submit a query to generate previews.")
-
-
- 
-
-
-
+        st.info("Please log in to view your history.")
